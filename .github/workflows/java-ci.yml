@@ -28,9 +28,9 @@ jobs:
     steps:
       - name: Print Secret Length
         env:
-          My-Secret: ${{secrets.Token}}
+          My_Secret: ${{secrets.Token}}
         run: |
-         echo "Secret Length: ${#My-Secret}"
+         echo "Secret Length: ${#My_Secret}"
 
 
   deploy:
