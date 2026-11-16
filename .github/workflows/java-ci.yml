@@ -1,10 +1,14 @@
 name: Run unit test
 
+
 on:
   push:
+    branches: [master]
+  pull_request:
 
-permissions:
+permissions: 
   contents: read
+
 
 jobs:
   test:
@@ -45,9 +49,9 @@ jobs:
     steps:
       - name: Print Secret Length
         env:
-          My_Secret: ${{secrets.Token}}
+          MY_SECRET: ${{secrets.TOKEN}}
         run: |
-         echo "Secret Length: ${#My_Secret}"
+         echo "Secret Length: ${#MY_SECRET}"
 
 
 
