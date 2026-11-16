@@ -32,6 +32,21 @@ jobs:
         run: |
          echo "Secret Length: ${#My_Secret}"
 
+  docker-build:
+    name: Build Docker Image
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        run: docker build -t javaapp:${{ github.sha }} .
+
+      - name: List Docker Images
+        run: docker images
+
 
   deploy:
     needs: test

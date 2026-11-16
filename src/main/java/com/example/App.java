@@ -1,17 +1,28 @@
 package com.example;
 
-/** Small application used to test a Java CI pipeline. */
+import com.sun.net.httpserver.HttpServer;
+import java.net.InetSocketAddress;
+
 public class App {
-    public static void main(String[] args) {
-        System.out.println("Hello from the GitHub Actions Java demo!");
-        System.out.println("2 + 3 = " + add(2, 3));
-    }
 
-    public static int add(int a, int b) {
-        return a + b;
-    }
+    public static void main(String[] args) throws Exception {
 
-    public static int multiply(int a, int b) {
-        return a * b;
+        HttpServer server =
+            HttpServer.create(new InetSocketAddress(8080), 0);
+
+        server.createContext("/", exchange -> {
+
+            String response = "Hi from Docker Java App!";
+
+            exchange.sendResponseHeaders(200, response.length());
+
+            try (var output = exchange.getResponseBody()) {
+                output.write(response.getBytes());
+            }
+        });
+
+        server.start();
+
+        System.out.println("Server started on port 8080");
     }
 }
