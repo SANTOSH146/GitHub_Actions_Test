@@ -23,8 +23,17 @@ jobs:
 
       - name: Run unit test
         run: mvn --batch-mode test
+  print: 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print Secret Length
+        env:
+          My-Secret: ${{secrets.Token}}
+        run: |
+         echo "Secret Length: ${#My-Secret}"
 
-  Deploy:
+
+  deploy:
     needs: test
     if: github.ref == 'refs/heads/master'
     runs-on : ubuntu-latest
