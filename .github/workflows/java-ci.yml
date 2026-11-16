@@ -23,15 +23,7 @@ jobs:
 
       - name: Run unit test
         run: mvn --batch-mode test
-  print: 
-    runs-on: ubuntu-latest
-    steps:
-      - name: Print Secret Length
-        env:
-          My_Secret: ${{secrets.Token}}
-        run: |
-         echo "Secret Length: ${#My_Secret}"
-
+  
   docker-build:
     name: Build Docker Image
     needs: test
@@ -45,11 +37,22 @@ jobs:
         run: docker build -t javaapp:${{ github.sha }} .
 
       - name: List Docker Images
-        run: docker images
+        run: docker 
+        
+  print: 
+    needs: docker-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print Secret Length
+        env:
+          My_Secret: ${{secrets.Token}}
+        run: |
+         echo "Secret Length: ${#My_Secret}"
+
 
 
   deploy:
-    needs: test
+    needs: print
     if: github.ref == 'refs/heads/master'
     runs-on : ubuntu-latest
     steps:
