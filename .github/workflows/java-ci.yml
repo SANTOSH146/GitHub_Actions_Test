@@ -23,4 +23,14 @@ jobs:
 
       - name: Run unit test
         run: mvn --batch-mode test
+
+  Deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on : ubuntu-latest
+    steps:
+      - name : Deploy Application
+        run: echo "Deplpoying"
+
+
     
