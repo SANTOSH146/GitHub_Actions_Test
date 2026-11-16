@@ -1,17 +1,21 @@
-name: Run unit test
 
+name: Java CI/CD Pipeline
 
 on:
   push:
     branches: [master]
   pull_request:
 
-permissions: 
+permissions:
   contents: read
 
+env:
+  DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/javaapp
 
 jobs:
+  # 1. Run unit tests
   test:
+    name: Run Unit Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -25,43 +29,69 @@ jobs:
           java-version: '17'
           cache: maven
 
-      - name: Run unit test
-        run: mvn --batch-mode test
-  
+      - name: Run unit tests
+        run: mvn --batch-mode clean test
+
+  # 2. Build and push Docker image
   docker-build:
-    name: Build Docker Image
+    name: Build and Push Docker Image
     needs: test
     runs-on: ubuntu-latest
 
+    # Only push images for commits on master, not pull requests
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build Docker Image
-        run: docker build -t javaapp:${{ github.sha }} .
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: List Docker Images
-        run: docker 
-        
-  print: 
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+            ${{ env.DOCKER_IMAGE }}:latest
+
+  # 3. Deploy to Kubernetes
+  deploy:
+    name: Deploy to Kubernetes
     needs: docker-build
     runs-on: ubuntu-latest
+
     steps:
-      - name: Print Secret Length
-        env:
-          MY_SECRET: ${{secrets.TOKEN}}
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: latest
+
+      - name: Configure Kubernetes access
         run: |
-         echo "Secret Length: ${#MY_SECRET}"
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
 
+      - name: Check cluster connection
+        run: kubectl get nodes
 
+      - name: Deploy application
+        run: |
+          kubectl apply -f k8s/deployment.yaml
+          kubectl set image deployment/javaapp-deployment \
+            javaapp=${{ env.DOCKER_IMAGE }}:${{ github.sha }}
 
-  deploy:
-    needs: print
-    if: github.ref == 'refs/heads/master'
-    runs-on : ubuntu-latest
-    steps:
-      - name : Deploy Application
-        run: echo "Deplpoying"
-
-
-    
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/javaapp-deployment --timeout=180s
+          kubectl get deployments
+          kubectl get pods
