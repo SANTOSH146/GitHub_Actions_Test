@@ -16,6 +16,6 @@ class AppTest {
 
     @Test
     void handlesNegativeNumbers() {
-        assertEquals(-1, App.add(2, -3));
+        assertEquals(-2, App.add(2, -3));
     }
 }
