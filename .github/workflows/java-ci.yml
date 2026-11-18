@@ -75,11 +75,11 @@ jobs:
 
       - name: Set image tag in manifest
         run: |
-          sed -i "s|image: .*/javaapp:latest|image: $IMAGE|" k8s/Deployment.yaml
-          grep "image:" k8s/Deployment.yaml
+          sed -i "s|image: .*/javaapp:latest|image: $IMAGE|" K8S/Deployment.yaml
+          grep "image:" K8S/Deployment.yaml
 
       - name: Apply Kubernetes manifests
-        run: kubectl apply -f k8s/
+        run: kubectl apply -f K8S/
 
       - name: Verify rollout
         run: |
