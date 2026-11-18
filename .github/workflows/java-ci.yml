@@ -1,4 +1,3 @@
-
 name: Java CI/CD Pipeline
 
 on:
@@ -57,11 +56,13 @@ jobs:
             ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
             ${{ env.DOCKER_IMAGE }}:latest
 
-  # 3. Deploy to local Docker Desktop Kubernetes
+  # 3. Deploy to minikube on the self-hosted Linux runner (WSL)
   deploy:
     needs: docker-build
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: [self-hosted, Linux, X64]
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    env:
+      IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/javaapp:${{ github.sha }}
 
     steps:
       - name: Checkout repository
@@ -69,20 +70,20 @@ jobs:
 
       - name: Check Kubernetes connection
         run: |
-          kubectl config current-context
+          kubectl config use-context minikube
           kubectl get nodes
 
-      - name: Apply Kubernetes manifest
-        run: kubectl apply -f k8s/deployment.yaml
-
-      - name: Update deployment image
-        env:
-          IMAGE: ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+      - name: Set image tag in manifest
         run: |
-          kubectl set image deployment/javaapp-deployment javaapp=$env:IMAGE
+          sed -i "s|image: .*/javaapp:latest|image: $IMAGE|" k8s/Deployment.yaml
+          grep "image:" k8s/Deployment.yaml
+
+      - name: Apply Kubernetes manifests
+        run: kubectl apply -f k8s/
 
       - name: Verify rollout
         run: |
           kubectl rollout status deployment/javaapp-deployment --timeout=180s
           kubectl get deployments
-          kubectl get pods
+          kubectl get pods -o wide
+          kubectl get svc javaapp-service
